@@ -41,8 +41,7 @@ body <- dashboardBody(
               htmlOutput("selectUI")
               ),
             tabPanel("Histogram",plotOutput("histo"),
-              checkboxInput("showmean","Show means", value=FALSE),
-              htmlOutput("selectUI"))
+              checkboxInput("showmean","Show means", value=FALSE))
         )
       ),
       fluidRow(

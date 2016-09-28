@@ -69,7 +69,7 @@ shinyServer(function(input,output){
                 sd_prop = sd(Proportion1), 
                 ci_prop = ci95(Proportion1))
     
-    values$df_data<-df_data_all
+    values$df_data<-df_data_all%>%na.omit()
     values$summ_data<-summdata
     values$inputcols<-summdata
   })
@@ -82,7 +82,7 @@ shinyServer(function(input,output){
     p1<-paste0("Proportion (",input$var1,")")
     p2<-paste0("Proportion (",input$var2,")")
     colnames(values$inputcols)<-c("Treatment",p1,p2,v1,v2)#rename variables based on textinput
-    selectInput("figval","Y-axis value:",colnames(values$inputcols[,2:5]))#dynamic ui that changes with inputs
+    selectInput("figval","Variable of interest:",colnames(values$inputcols[,2:5]))#dynamic ui that changes with inputs
     ##the problem here is that it is impossible to connect with the plot then...
   })
 
@@ -152,7 +152,7 @@ shinyServer(function(input,output){
     hist.plot<-ggplot(data=values$df_data,aes_string(x=meanval,fill='Treatment',color='Treatment'))+
       geom_density(alpha=.35)+
       theme_mooney(legend.location="bottom")+
-      labs(x=yval,y="Frequency")+
+      labs(x=xval,y="Density")+
       scale_fill_manual(values=c("#006666","#FF9900"))+
       scale_color_manual(values=c("#006666","#FF9900"))
     
@@ -171,17 +171,40 @@ shinyServer(function(input,output){
     validate(
       need(input$getdata, "Enter values and press 'Run Data' for summary statistics")
     )
+    v1<-paste0(input$var1)
+    v2<-paste0(input$var2)
+    p1<-paste0("Proportion (",input$var1,")")
+    p2<-paste0("Proportion (",input$var2,")")
+    
+    if (input$figval == p1){
+      yval<-values$summ_data$mean_prop1
+      meanval<-values$df_data$Proportion1##these names are backwards
+      xval<-p1
+    } else if (input$figval == p2) {
+      yval<-values$summ_data$mean_prop2
+      meanval<-values$df_data$Proportion2
+      xval<-p2
+    } else if (input$figval == v1){
+      yval<-values$summ_data$mean_var1
+      meanval<-values$df_data$variable1
+      xval<-v1
+    } else {
+      yval<-values$summ_data$mean_var2
+      meanval<-values$df_data$variable2
+      xval<-v2
+    }
+    
     stat.df<-values$df_data%>%
-      na.omit()%>%
-      group_by(Treatment)%>%
-      summarize(N = length(Proportion1),
-                SE = se(Proportion1),
-                S = sd(Proportion1),
-                mean = mean(Proportion1),
-                t = ttable[ttable$n == length(Proportion1),2],
-                CI = ci95(Proportion1),
-                CIlow = mean(Proportion1)-ci95(Proportion1),
-                CIhi = mean(Proportion1)-ci95(Proportion1))
+      na.omit()%>%##this isnt working?
+      group_by(values$df_data$Treatment)%>%
+      summarize(N = length(meanval),
+                SE = se(meanval),
+                S = sd(meanval),
+                mean = mean(meanval),
+                t = ttable[ttable$n == length(meanval),2],
+                CI = ci95(meanval),
+                CIlow = mean(meanval)-ci95(meanval),
+                CIhi = mean(meanval)-ci95(meanval))
     rhandsontable(stat.df[,-1], rowHeaders=c(input$treat1,input$treat2),
                   colHeaders=c("N","SE","S","Mean","T","95% CI","Low CI","High CI"),readOnly=TRUE,
                   rowHeaderWidth=130)%>%
@@ -193,7 +216,26 @@ shinyServer(function(input,output){
     validate(
       need(input$getdata, "Enter values and press 'Run Data' for ANOVA test results")
     )
-    aov.model<-aov(Proportion1~Treatment,data=values$df_data)
+    v1<-paste0(input$var1)
+    v2<-paste0(input$var2)
+    p1<-paste0("Proportion (",input$var1,")")
+    p2<-paste0("Proportion (",input$var2,")")
+    
+    if (input$figval == p1){
+      variable<-values$df_data$Proportion1##these names are backwards
+      xval<-p1
+    } else if (input$figval == p2) {
+      variable<-values$df_data$Proportion2
+      xval<-p2
+    } else if (input$figval == v1){
+      variable<-values$df_data$variable1
+      xval<-v1
+    } else {
+      variable<-values$df_data$variable2
+      xval<-v2
+    }
+    
+    aov.model<-aov(variable~Treatment,data=values$df_data)
     print(aov.model)
     br()
     br()
