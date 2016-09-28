@@ -1,5 +1,6 @@
 library(shiny)
 library(ggplot2)
+install.packages("rhandsontable")
 library(rhandsontable)
 library(dplyr)
 library(devtools)
