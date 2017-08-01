@@ -6,7 +6,6 @@ library(rhandsontable)
 sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem("Example",tabName="example",icon=icon("stats",lib="glyphicon")),
-    menuItem("test",tabName="test"),br(),
     textInput("treat1","Treatment 1:",value="Treatment 1"),
     textInput("treat2","Treatment 2:", value="Treatment 2"),
     textInput("var1","Variable 1:", value= "A"),
@@ -22,7 +21,7 @@ body <- dashboardBody(
         box(title = "Comparing and plotting means",width=3,solidHeader=TRUE,status="primary",collapsible = TRUE,
             p("Use the text boxes on the left to name the treatments and variables. Enter data in the respective tables."),br(),
             p("Pressing 'Run Data' initiates a one-way ANOVA test on the data entered in the tables. 
-              This test evaluates whether the variable of interest differs between the two treatment groups"),br(),
+              This test evaluates whether the variable of interest differs between the two treatment groups. Change the variable of interest to re-run results."),br(),
             p("Summary statistics will also be calculated and plotted. Use the controls to select which variables are plotted."),br(),
             p("Note: data must be entered for both treatments in order for the outputs to work."),br(),
             actionButton("getdata","Run Data"),br(),br(),
@@ -52,9 +51,6 @@ body <- dashboardBody(
         box(title="One-way ANOVA", width=6, status="primary",
             verbatimTextOutput("anovatable"))
       )
-    ),
-    tabItem(tabName="test",
-            h2("this is a test")
     )
   )
 )

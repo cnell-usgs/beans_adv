@@ -1,6 +1,5 @@
 library(shiny)
 library(ggplot2)
-install.packages("rhandsontable")
 library(rhandsontable)
 library(dplyr)
 library(devtools)
@@ -26,7 +25,7 @@ shinyServer(function(input,output){
                                                 variable2 = as.numeric(rep(NA,50))))
   values$df_data = data.frame(variable1= as.numeric(rep(0,100)),
                                   variable2=as.numeric(rep(0,100)),
-                                  Treatment = as.factor(rep("treat1",100)),
+                                  Treatment = as.factor(rep(c("treat1","treat2"),each=50)),
                                   Proportion1 = as.numeric(rep(0,100)))
   values$summ_data = data.frame(Treatment = c("treat1","treat2"),
                                 mean_var1 =c(0,0),
@@ -52,6 +51,7 @@ shinyServer(function(input,output){
     df_data2<-hot_to_r(input$table2)
     df_data1$Treatment<-rep(input$treat1,length(values$df_data1$variable1))#make treatment var
     df_data2$Treatment<-rep(input$treat2,length(values$df_data2$variable1))
+
     df_data_all<-rbind(df_data1,df_data2)#bind
     df_data_all$Proportion1<-df_data_all$variable1/(df_data_all$variable1+df_data_all$variable2)#calc proportions
     df_data_all$Proportion2<-df_data_all$variable2/(df_data_all$variable1+df_data_all$variable2)
@@ -72,6 +72,8 @@ shinyServer(function(input,output){
     values$df_data<-df_data_all%>%na.omit()
     values$summ_data<-summdata
     values$inputcols<-summdata
+    
+    
   })
  
   output$selectUI<-renderUI({
@@ -117,7 +119,7 @@ shinyServer(function(input,output){
       theme_mooney()+
       geom_errorbar(aes(ymax=yval+error,ymin=yval-error),width=.2)+
       labs(x="Treatment",y=yvar.lab)+
-      scale_fill_manual(values=c("#006666","#FF9900"))+
+      scale_fill_pretty()+
       theme(legend.position="none")
     bar.plot
   })
@@ -151,10 +153,11 @@ shinyServer(function(input,output){
     
     hist.plot<-ggplot(data=values$df_data,aes_string(x=meanval,fill='Treatment',color='Treatment'))+
       geom_density(alpha=.35)+
-      theme_mooney(legend.location="bottom")+
+      theme(legend.location="bottom")+
+      theme_mooney()+
       labs(x=xval,y="Density")+
-      scale_fill_manual(values=c("#006666","#FF9900"))+
-      scale_color_manual(values=c("#006666","#FF9900"))
+      scale_fill_pretty()+
+      scale_color_pretty()
     
     if(input$showmean == FALSE){
       hist.plot
@@ -177,26 +180,18 @@ shinyServer(function(input,output){
     p2<-paste0("Proportion (",input$var2,")")
     
     if (input$figval == p1){
-      yval<-values$summ_data$mean_prop1
-      meanval<-values$df_data$Proportion1##these names are backwards
-      xval<-p1
+      meanval<-values$df_data$Proportion1
     } else if (input$figval == p2) {
-      yval<-values$summ_data$mean_prop2
       meanval<-values$df_data$Proportion2
-      xval<-p2
     } else if (input$figval == v1){
-      yval<-values$summ_data$mean_var1
       meanval<-values$df_data$variable1
-      xval<-v1
     } else {
-      yval<-values$summ_data$mean_var2
       meanval<-values$df_data$variable2
-      xval<-v2
     }
-    
+  
+  
     stat.df<-values$df_data%>%
-      na.omit()%>%##this isnt working?
-      group_by(values$df_data$Treatment)%>%
+      dplyr::group_by(Treatment)%>%#not recognizing
       summarize(N = length(meanval),
                 SE = se(meanval),
                 S = sd(meanval),
@@ -223,16 +218,12 @@ shinyServer(function(input,output){
     
     if (input$figval == p1){
       variable<-values$df_data$Proportion1##these names are backwards
-      xval<-p1
     } else if (input$figval == p2) {
       variable<-values$df_data$Proportion2
-      xval<-p2
     } else if (input$figval == v1){
       variable<-values$df_data$variable1
-      xval<-v1
     } else {
       variable<-values$df_data$variable2
-      xval<-v2
     }
     
     aov.model<-aov(variable~Treatment,data=values$df_data)
@@ -249,7 +240,7 @@ shinyServer(function(input,output){
       paste("data-",Sys.Date(),".csv", sep="")
     },
     content = function(file){
-      write.csv(testdf1,file)
+      write.csv(values$df_data,file)
     }
   )
   output$downloadplotr <-downloadHandler(##this should be redone
